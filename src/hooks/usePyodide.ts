@@ -6,7 +6,7 @@ export function usePyodide() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    ;(async () => {
+    (async () => {
       setLoading(true)
       const pyodideModule = await pyo.loadPyodide({
         indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.28.1/full/',

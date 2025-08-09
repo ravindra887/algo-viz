@@ -1,19 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePyodide } from './hooks/usePyodide'
 import MonacoEditor from '@monaco-editor/react'
 
 export default function App() {
   const { pyodide, loading } = usePyodide()
   const [code, setCode] = useState(
-    'arr = [1,1,2,2,3]\narr = list(set(arr))\nfor i in range(len(arr)):\n    arr[i] += 1'
+    'arr = [1,1,2,2,3]\narr = list(set(arr))\nfor i in range(len(arr)):\n    arr[i] += 1\nprint(arr)'
   )
   const [output, setOutput] = useState('')
+
+
+  // Initialize a Python helper to capture stdout & errors once Pyodide is ready
+  useEffect(() => {
+    if (!pyodide) return
+    pyodide.runPython(`\ntry:\n    _exec_and_capture\nexcept NameError:\n    import sys, io, traceback, json\n    def _exec_and_capture(source:str):\n        buf = io.StringIO()\n        stdout = sys.stdout\n        sys.stdout = buf\n        error = None\n        try:\n            compiled = compile(source, '<input>', 'exec')\n            exec(compiled, globals())\n        except Exception as e:\n            error = traceback.format_exc()\n        finally:\n            sys.stdout = stdout\n        return {'stdout': buf.getvalue(), 'error': error}\n`)
+  }, [pyodide])
 
   async function runCode() {
     if (!pyodide) return
     try {
-      const result = await pyodide.runPythonAsync(code)
-      setOutput(JSON.stringify(result))
+      const encoded = JSON.stringify(code)
+      const jsonResult = await pyodide.runPythonAsync(
+        `import json\njson.dumps(_exec_and_capture(${encoded}))`
+      )
+      const { stdout, error } = JSON.parse(jsonResult as string)
+      if (error) {
+        setOutput((stdout || '') + (stdout ? '\n' : '') + error)
+      } else {
+        setOutput(stdout || '(no output)')
+      }
     } catch (err) {
       setOutput(String(err))
     }
@@ -83,9 +98,7 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <pre className="m-0 whitespace-pre-wrap">
-              {output || '(no output yet)'}
-            </pre>
+            <pre className="m-0 whitespace-pre-wrap">{output}</pre>
           )}
         </div>
       </div>
