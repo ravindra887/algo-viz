@@ -5,7 +5,7 @@ import MonacoEditor from '@monaco-editor/react'
 export default function App() {
   const { pyodide, loading } = usePyodide()
   const [code, setCode] = useState(
-    'arr = [1,1,2,2,3]\narr = list(set(arr))\narr'
+    'arr = [1,1,2,2,3]\narr = list(set(arr))\nfor i in range(len(arr)):\n    arr[i] += 1'
   )
   const [output, setOutput] = useState('')
 
@@ -18,8 +18,6 @@ export default function App() {
       setOutput(String(err))
     }
   }
-
-  if (loading) return <p>Loading Pyodide...</p>
 
   return (
     <div className="flex flex-col md:flex-row h-full w-full bg-neutral-900 text-neutral-200">
@@ -60,21 +58,36 @@ export default function App() {
           <div className="flex items-center gap-2">
             <button
               onClick={runCode}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 text-xs rounded shadow-sm"
+              disabled={loading}
+              className="px-3 py-1.5 text-xs rounded shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-blue-600 hover:bg-blue-500 text-white"
             >
               Run
             </button>
             <button
               onClick={() => setOutput('')}
-              className="text-xs px-2 py-1 rounded border border-neutral-600 hover:bg-neutral-700 text-neutral-300"
+              disabled={loading}
+              className="text-xs px-2 py-1 rounded border border-neutral-600 hover:bg-neutral-700 text-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Clear
             </button>
           </div>
         </div>
-        <pre className="flex-1 m-0 p-4 overflow-auto text-left bg-neutral-950 text-sm whitespace-pre-wrap text-neutral-100">
-          {output}
-        </pre>
+        <div className="flex-1 m-0 p-4 overflow-auto text-left bg-neutral-950 text-sm whitespace-pre-wrap text-neutral-100 relative">
+          {loading ? (
+            <div className="h-full w-full flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-12 w-12 rounded-full border-4 border-neutral-700 border-t-blue-500 animate-spin" />
+                <p className="text-sm text-neutral-400">
+                  Loading Python runtime...
+                </p>
+              </div>
+            </div>
+          ) : (
+            <pre className="m-0 whitespace-pre-wrap">
+              {output || '(no output yet)'}
+            </pre>
+          )}
+        </div>
       </div>
     </div>
   )
